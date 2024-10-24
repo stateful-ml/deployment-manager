@@ -1,0 +1,9 @@
+name:
+  stateful-ml-service
+
+image:
+  stateful-ml-service
+
+models:
+  - name: embedder-model
+    uri: embedder-model/1
