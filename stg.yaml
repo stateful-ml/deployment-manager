@@ -1,9 +1,6 @@
-name:
-  stateful-ml-service
-
-image:
-  stateful-ml-service
+tag:
+  v0.0.1-rc
 
 models:
-  - name: embedder-model
-    uri: embedder-model/1
+  - project: embedder-model
+    identifier: embedder-model/1
