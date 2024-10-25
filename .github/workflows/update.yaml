@@ -1,0 +1,22 @@
+name: Update
+on:
+    repository_dispatch:
+        types: [code_update, model_update]
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+        -   uses: actions/checkout@v3
+        -   name: Get an entry with a variable that might contain dots or spaces
+            id: get_username
+            uses: mikefarah/yq@master
+            with:
+                cmd: yq -i '.${{ github.event.client_payload.key }} = ${{ github.event.client_payload.value }}' '${{ github.event.client_payload.environment }}.yaml'
+        -   run: cat ${{ github.event.client_payload.environment }}.yaml
+        -   name: Commit and push changes
+            run: |
+                git config --global user.name "github-actions[bot]"
+                git config --global user.email "github-actions[bot]@users.noreply.github.com"
+                git add .
+                git commit -m "Bump to ${{ github.event.client_payload.value }}"
+                git push

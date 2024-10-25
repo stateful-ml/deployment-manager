@@ -1,0 +1,17 @@
+# - checkout
+# - extract tag with yq action
+# - checkout tag in a different repo
+# - docker build service
+# - helm install restful-ml stateful-ml/restful-ml -f ./stg.yaml --namespace stg
+# - helm install restful-ml stateful-ml/restful-ml -f ./prd.yaml --namespace prd
+# - prefect deployment inspect and if nothing (exit 1) then prefect deploy on the stg file
+
+name: Release
+on:
+    workflow_dispatch: # WIP
+    # push:
+    #   branches:
+    #     - main
+jobs:
+  release:
+    runs-on: docker:dind
