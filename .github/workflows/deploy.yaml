@@ -1,17 +1,57 @@
-# - checkout
-# - extract tag with yq action
-# - checkout tag in a different repo
-# - docker build service
-# - helm install restful-ml stateful-ml/restful-ml -f ./stg.yaml --namespace stg
-# - helm install restful-ml stateful-ml/restful-ml -f ./prd.yaml --namespace prd
-# - prefect deployment inspect and if nothing (exit 1) then prefect deploy on the stg file
-
 name: Release
 on:
-    workflow_dispatch: # WIP
-    # push:
-    #   branches:
-    #     - main
+  push:
+    branches:
+      - prd
+      - stg
+
 jobs:
-  release:
+  release-helm:
     runs-on: docker:dind
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get code version from config
+        id: get-tag
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq '.tag' 'deployments.yml'
+
+      # the reason its here is that im building prefect anyway.
+      # TODO: build all images, including prefect's, in their respective repos
+      - name: Build Docker image for service
+        run: |
+          docker build -t restful-ml:${{ steps.get-tag.outputs.result }} "https://github.com/stateful-ml/stateful-ml.git#${{ steps.get-tag.outputs.result }}:workspace" --file service/
+
+      - name: Helm Install restful-ml
+        run: |
+          helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --namespace "${{ github.ref_name }}"
+
+  release-prefect:
+    runs-on: prefect:3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Read full yaml
+        uses: pietrobolcato/action-read-yaml@1.1.0
+        id: read-yaml
+        with:
+          config: deployments.yaml
+
+      - name: Checkout tag in different repository
+        uses: actions/checkout@v3
+        with:
+          repository: stateful-ml/stateful-ml
+          ref: ${{ steps.read-yaml.outputs['tag'] }}
+          path: stateful-ml
+          
+      - name: Deduplicate staging deployments
+        if: ${{ github.ref_name == 'prd' }}
+        run: |
+          echo TODO: prefect deployment ls | grep -stg | grep <complete deployment id tag> | deployment-pauser-script
+
+      - name: Deploy Prefect
+        run: |
+          python stateful-ml/pipelines/deploy.py -c ${{ steps.read-yaml.outputs['tag'] }} -m ${{ steps.read-yaml.outputs['models'] }}
