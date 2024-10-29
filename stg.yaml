@@ -1,6 +1,0 @@
-tag:
-  v0.0.1-rc
-
-models:
-  - project: embedder-model
-    identifier: embedder-model/1

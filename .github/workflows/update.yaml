@@ -7,12 +7,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
         -   uses: actions/checkout@v3
-        -   name: Get an entry with a variable that might contain dots or spaces
-            id: get_username
+            with:
+                ref: "${{ github.event.client_payload.environment }}"
+
+        -   name: Set new value
             uses: mikefarah/yq@master
             with:
-                cmd: yq -i '.${{ github.event.client_payload.key }} = ${{ github.event.client_payload.value }}' '${{ github.event.client_payload.environment }}.yaml'
-        -   run: cat ${{ github.event.client_payload.environment }}.yaml
+                cmd: yq -i '.${{ github.event.client_payload.key }} = ${{ github.event.client_payload.value }}' 'deployments.yaml'
+
         -   name: Commit and push changes
             run: |
                 git config --global user.name "github-actions[bot]"
