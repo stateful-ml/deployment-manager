@@ -46,12 +46,12 @@ jobs:
           repository: stateful-ml/stateful-ml
           ref: ${{ steps.read-yaml.outputs['tag'] }}
           path: stateful-ml
-          
-      - name: Deduplicate staging deployments
-        if: ${{ github.ref_name == 'prd' }}
-        run: |
-          echo TODO: prefect deployment ls | grep -stg | grep <complete deployment id tag> | deployment-pauser-script
 
       - name: Deploy Prefect
         run: |
           python stateful-ml/pipelines/deploy.py -c ${{ steps.read-yaml.outputs['tag'] }} -m ${{ steps.read-yaml.outputs['models'] }}
+
+      - name: Deduplicate staging deployments
+        if: ${{ github.ref_name == 'prd' }}
+        run: |
+          echo TODO: prefect deployment ls | grep -stg | grep <complete deployment id tag> | deployment-pauser-script
