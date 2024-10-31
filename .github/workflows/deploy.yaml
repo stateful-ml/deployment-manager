@@ -28,30 +28,40 @@ jobs:
         run: |
           helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --namespace "${{ github.ref_name }}"
 
+
   release-prefect:
-    runs-on: prefect:3
+    runs-on: ubuntu-latest
+    container:
+      image: prefecthq/prefect:3.0.8-python3.11
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Read full yaml
-        uses: pietrobolcato/action-read-yaml@1.1.0
-        id: read-yaml
+      - name: Load yaml
+        id: load-yaml
+        uses: mikefarah/yq@master
         with:
-          config: deployments.yaml
+          cmd: yq eval -o=json . 'deployments.yaml'
+
+      - name: Build prefect deployment parameters
+        id: build-deployment-params
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval '.models[] | "--" + .project + " " + .identifier' 'deployments.yaml' | tr '\n' ' '
 
       - name: Checkout tag in different repository
         uses: actions/checkout@v3
         with:
           repository: stateful-ml/stateful-ml
-          ref: ${{ steps.read-yaml.outputs['tag'] }}
+          ref: ${{ fromJson(steps.load-yaml.outputs.result).tag }}
           path: stateful-ml
+
 
       - name: Deploy Prefect
         run: |
-          python stateful-ml/pipelines/deploy.py -c ${{ steps.read-yaml.outputs['tag'] }} -m ${{ steps.read-yaml.outputs['models'] }}
+          python stateful-ml/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ join(fromJson(steps.load-yaml.outputs.result).models.*.identifier, '-') }} ${{ steps.build-deployment-params.outputs.result }}
 
-      - name: Deduplicate staging deployments
-        if: ${{ github.ref_name == 'prd' }}
-        run: |
-          echo TODO: prefect deployment ls | grep -stg | grep <complete deployment id tag> | deployment-pauser-script
+      # - name: Deduplicate staging deployments
+      #   if: ${{ github.ref_name == 'prd' }}
+      #   run: |
+      #     echo TODO: prefect deployment ls | grep -stg | grep <complete deployment id tag> | deployment-pauser-script
