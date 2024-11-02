@@ -31,9 +31,16 @@ jobs:
 
   release-prefect:
     runs-on: ubuntu-latest
-    container:
-      image: prefecthq/prefect:3.0.8-python3.11
+    # container:
+    #   image: prefecthq/prefect:3.0.8-python3.11
     steps:
+      ## alternative to container for `act`
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11'
+
+      # - run: pip install prefect==3.0.8
+
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -49,19 +56,23 @@ jobs:
         with:
           cmd: yq eval '.models[] | "--" + .project + " " + .identifier' 'deployments.yaml' | tr '\n' ' '
 
+      - name: Build prefect pipeline version
+        id: build-version
+        run: echo "version=${{ join(fromJson(steps.load-yaml.outputs.result).models.*.identifier, '-') }}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout tag in different repository
         uses: actions/checkout@v3
         with:
           repository: stateful-ml/stateful-ml
           ref: ${{ fromJson(steps.load-yaml.outputs.result).tag }}
           path: stateful-ml
-
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy Prefect
         run: |
-          python stateful-ml/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ join(fromJson(steps.load-yaml.outputs.result).models.*.identifier, '-') }} ${{ steps.build-deployment-params.outputs.result }}
+          python stateful-ml/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ steps.build-version.outputs.version }} ${{ steps.build-deployment-params.outputs.result }}
 
-      # - name: Deduplicate staging deployments
-      #   if: ${{ github.ref_name == 'prd' }}
-      #   run: |
-      #     echo TODO: prefect deployment ls | grep -stg | grep <complete deployment id tag> | deployment-pauser-script
+      - name: Deduplicate staging deployments
+        if: ${{ github.ref_name == 'prd' }}
+        run: |
+          python .github/workflows/deduplicate-deployments.py --version ${{ steps.build-version.outputs.version }}
