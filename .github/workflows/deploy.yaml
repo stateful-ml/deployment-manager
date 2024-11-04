@@ -27,13 +27,13 @@ jobs:
         id: get-tag
         uses: mikefarah/yq@master
         with:
-          cmd: yq '.tag' 'deployments.yml'
+          cmd: yq '.tag' 'deployments.yaml'
 
       # the reason its here is that im building prefect anyway.
       # TODO: build all images, including prefect's, in their respective repos
       - name: Build Docker image for service
         run: |
-          docker build -t restful-ml:${{ steps.get-tag.outputs.result }} "https://github.com/stateful-ml/stateful-ml.git#${{ steps.get-tag.outputs.result }}:workspace" --file service/
+          docker build -t restful-ml:${{ steps.get-tag.outputs.result }} "https://github.com/stateful-ml/stateful-ml.git#${{ steps.get-tag.outputs.result }}:workspace" --file service/Dockerfile
 
       - name: Helm Install restful-ml
         run: |
