@@ -2,4 +2,4 @@ tag:
   v0.0.1
 
 models:
-  embedder-model: embedder-model/1
+  embedder-model: embedder/1
