@@ -23,21 +23,25 @@ jobs:
       - name: Check kubectl connection
         run: kubectl get nodes
 
-      - name: Get code version from config
-        id: get-tag
+      - name: Load yaml
+        id: load-yaml
         uses: mikefarah/yq@master
         with:
-          cmd: yq '.tag' 'deployments.yaml'
+          cmd: yq eval -o=json . 'deployments.yaml'
 
       # the reason its here is that im building prefect anyway.
       # TODO: build all images, including prefect's, in their respective repos
       - name: Build Docker image for service
         run: |
-          docker build -t restful-ml:${{ steps.get-tag.outputs.result }} "https://github.com/stateful-ml/stateful-ml.git#${{ steps.get-tag.outputs.result }}:workspace" --file service/Dockerfile
+          docker build -t restful-ml:${{ fromJson(steps.load-yaml.outputs.result).tag }} "https://github.com/stateful-ml/stateful-ml.git#${{ fromJson(steps.load-yaml.outputs.result).tag }}:workspace" --file service/Dockerfile
+
+      - name: Build versions
+        id: build-version
+        run: echo "version=${{fromJson(steps.load-yaml.outputs.result).tag}}-${{ join(fromJson(steps.load-yaml.outputs.result).models.*.identifier, '-') }}" >> "$GITHUB_OUTPUT"
 
       - name: Helm Install restful-ml
         run: |
-          helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --namespace "${{ github.ref_name }}"
+          VERSION=${{ steps.build-version.outputs.version }} helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --namespace "${{ github.ref_name }}"
 
 
   release-prefect:
@@ -65,11 +69,11 @@ jobs:
         id: build-deployment-params
         uses: mikefarah/yq@master
         with:
-          cmd: yq eval '.models[] | "--" + .project + " " + .identifier' 'deployments.yaml' | tr '\n' ' '
+          cmd: yq eval '.models | to_entries | map("--" + .key + " " + .value) | join(" ")' 'deployments.yaml'
 
       - name: Build prefect pipeline version
         id: build-version
-        run: echo "version=${{ join(fromJson(steps.load-yaml.outputs.result).models.*.identifier, '-') }}" >> "$GITHUB_OUTPUT"
+        run: echo "version=${{fromJson(steps.load-yaml.outputs.result).tag}}-${{ join(fromJson(steps.load-yaml.outputs.result).models.*.identifier, '-') }}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout tag in different repository
         uses: actions/checkout@v3

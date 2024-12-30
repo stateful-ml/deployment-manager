@@ -2,5 +2,4 @@ tag:
   v0.0.1
 
 models:
-  - project: embedder-model
-    identifier: embedder-model/1
+  embedder-model: embedder-model/1
