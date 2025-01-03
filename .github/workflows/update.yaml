@@ -1,4 +1,6 @@
 name: Update
+permissions:
+    contents: write
 on:
     repository_dispatch:
         types: [code_update, model_update]
