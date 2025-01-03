@@ -1,5 +1,4 @@
-tag:
-  v0.0.1
-
+tag: v0.0.1
 models:
   embedder-model: embedder/1
+  preference-updater: ""
