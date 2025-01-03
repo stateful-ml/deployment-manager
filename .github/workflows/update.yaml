@@ -15,7 +15,7 @@ jobs:
         -   name: Set new value
             uses: mikefarah/yq@master
             with:
-                cmd: yq -i '.${{ github.event.client_payload.key }} = "${{ github.event.client_payload.value }}"' 'deployments.yaml'
+                cmd: yq -i '.${{ github.event.client_payload.key }} = ${{ github.event.client_payload.value }}' 'deployments.yaml'
 
         -   name: Commit and push changes
             run: |
