@@ -32,19 +32,22 @@ jobs:
         with:
           cmd: yq eval -o=json . 'deployments.yaml'
 
+      - name: Build version
+        id: build-version
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval '[.tag] + (.models | keys) | join("-")' 'deployments.yaml'
+
       # the reason its here is that im building prefect anyway.
       # TODO: build all images, including prefect's, in their respective repos
       - name: Build Docker image for service
         run: |
           docker build -t restful-ml:${{ fromJson(steps.load-yaml.outputs.result).tag }} "https://github.com/stateful-ml/stateful-ml.git#${{ fromJson(steps.load-yaml.outputs.result).tag }}:workspace" --file service/Dockerfile
 
-      - name: Build versions
-        id: build-version
-        run: echo "version=${{fromJson(steps.load-yaml.outputs.result).tag}}-${{ join(fromJson(steps.load-yaml.outputs.result).models.*.identifier, '-') }}" >> "$GITHUB_OUTPUT"
-
       - name: Helm Install restful-ml
         run: |
-          VERSION=${{ steps.build-version.outputs.version }} helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --namespace "${{ github.ref_name }}"
+          helm repo add stateful-ml https://stateful-ml.github.io/infra/
+          VERSION=${{ steps.build-version.outputs.result }} helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --namespace "${{ github.ref_name }}"
 
 
   release-prefect:
@@ -74,9 +77,11 @@ jobs:
         with:
           cmd: yq eval '.models | to_entries | map("--" + .key + " " + .value) | join(" ")' 'deployments.yaml'
 
-      - name: Build prefect pipeline version
+      - name: Build version
         id: build-version
-        run: echo "version=${{fromJson(steps.load-yaml.outputs.result).tag}}-${{ join(fromJson(steps.load-yaml.outputs.result).models.*.identifier, '-') }}" >> "$GITHUB_OUTPUT"
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq eval '[.tag] + (.models | keys) | join("-")' 'deployments.yaml'
 
       - name: Checkout tag in different repository
         uses: actions/checkout@v3
@@ -91,9 +96,9 @@ jobs:
         run: |
           pip install --no-cache -r stateful-ml/workspace/shared/requirements.txt
           pip install --no-cache -r stateful-ml/workspace/pipelines/requirements.txt
-          python stateful-ml/workspace/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ steps.build-version.outputs.version }} ${{ steps.build-deployment-params.outputs.result }}
+          python stateful-ml/workspace/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ steps.build-version.outputs.result }} ${{ steps.build-deployment-params.outputs.result }}
 
       - name: Deduplicate staging deployments
         if: ${{ github.ref_name == 'prd' }}
         run: |
-          python .github/workflows/deduplicate-deployments.py --version ${{ steps.build-version.outputs.version }}
+          python .github/workflows/deduplicate-deployments.py --version ${{ steps.build-version.outputs.result }}
