@@ -1,5 +1,6 @@
 name: Release
 on:
+  workflow_dispatch:
   push:
     branches:
       - prd
@@ -87,7 +88,7 @@ jobs:
 
       - name: Deploy Prefect
         run: |
-          python stateful-ml/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ steps.build-version.outputs.version }} ${{ steps.build-deployment-params.outputs.result }}
+          python stateful-ml/workspace/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ steps.build-version.outputs.version }} ${{ steps.build-deployment-params.outputs.result }}
 
       - name: Deduplicate staging deployments
         if: ${{ github.ref_name == 'prd' }}
