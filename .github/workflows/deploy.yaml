@@ -83,6 +83,7 @@ jobs:
           repository: stateful-ml/stateful-ml
           ref: ${{ fromJson(steps.load-yaml.outputs.result).tag }}
           path: stateful-ml
+          token: ${{ secrets.STATEFUL_ML_PAT }}
 
       - name: Deploy Prefect
         run: |
