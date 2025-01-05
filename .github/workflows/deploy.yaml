@@ -4,6 +4,8 @@ on:
     branches:
       - prd
       - stg
+    paths:
+      - deployments.yaml
 
 jobs:
   release-helm:
