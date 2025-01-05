@@ -11,6 +11,7 @@ jobs:
         -   uses: actions/checkout@v3
             with:
                 ref: "${{ github.event.client_payload.environment }}"
+                token: ${{ secrets.STATEFUL_ML_PAT }}
 
         -   name: Set new value
             uses: mikefarah/yq@master
