@@ -87,7 +87,10 @@ jobs:
           token: ${{ secrets.STATEFUL_ML_PAT }}
 
       - name: Deploy Prefect
+        # wild, i NEED to ditch prefect
         run: |
+          pip install --no-cache -r stateful-ml/workspace/shared/requirements.txt
+          pip install --no-cache -r stateful-ml/workspace/pipelines/requirements.txt
           python stateful-ml/workspace/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ steps.build-version.outputs.version }} ${{ steps.build-deployment-params.outputs.result }}
 
       - name: Deduplicate staging deployments
