@@ -47,7 +47,7 @@ jobs:
       - name: Helm Install restful-ml
         run: |
           helm repo add stateful-ml https://stateful-ml.github.io/infra/
-          VERSION=${{ steps.build-version.outputs.result }} helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --namespace "${{ github.ref_name }}"
+          helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --set version=${{ steps.build-version.outputs.result }} --namespace ${{ github.ref_name }}
 
 
   release-prefect:
