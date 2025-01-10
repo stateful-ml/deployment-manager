@@ -15,6 +15,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Extract deployment data
+        id: parse-yaml
+        uses: './.github/actions/setup'
+
       - uses: azure/setup-helm@v4.2.0
       - name: Configure kubeconfig
         env:
@@ -41,13 +45,20 @@ jobs:
       # the reason its here is that im building prefect anyway.
       # TODO: build all images, including prefect's, in their respective repos
       - name: Build Docker image for service
-        run: |
-          docker build -t restful-ml:${{ fromJson(steps.load-yaml.outputs.result).tag }} "https://github.com/stateful-ml/stateful-ml.git#${{ fromJson(steps.load-yaml.outputs.result).tag }}:workspace" --file service/Dockerfile
+        run: >
+          docker build
+            -t restful-ml:${{ steps.parse-yaml.outputs.tag }}
+            "https://github.com/stateful-ml/stateful-ml.git#${{ steps.parse-yaml.outputs.tag }}:workspace"
+            --file service/Dockerfile
 
       - name: Helm Install restful-ml
         run: |
           helm repo add stateful-ml https://stateful-ml.github.io/infra/
-          helm install restful-ml stateful-ml/restful-ml -f ./deployments.yaml --set version=${{ steps.build-version.outputs.result }} --namespace ${{ github.ref_name }}
+          helm install \
+            restful-ml stateful-ml/restful-ml \
+            -f ./deployments.yaml \
+            --set version=${{ steps.parse-yaml.outputs.version }} \
+            --namespace ${{ github.ref_name }}
 
 
   release-prefect:
@@ -65,11 +76,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Load yaml
-        id: load-yaml
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq eval -o=json . 'deployments.yaml'
+      - name: Extract deployment data
+        id: parse-yaml
+        uses: './.github/actions/setup'
 
       - name: Build prefect deployment parameters
         id: build-deployment-params
@@ -87,7 +96,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: stateful-ml/stateful-ml
-          ref: ${{ fromJson(steps.load-yaml.outputs.result).tag }}
+          ref: ${{ steps.parse-yaml.outputs.tag }}
           path: stateful-ml
           token: ${{ secrets.STATEFUL_ML_PAT }}
 
@@ -96,9 +105,13 @@ jobs:
         run: |
           pip install --no-cache -r stateful-ml/workspace/shared/requirements.txt
           pip install --no-cache -r stateful-ml/workspace/pipelines/requirements.txt
-          python stateful-ml/workspace/pipelines/deploy.py --env ${{ github.ref_name }} --version ${{ steps.build-version.outputs.result }} ${{ steps.build-deployment-params.outputs.result }}
+          python stateful-ml/workspace/pipelines/deploy.py \
+            --env ${{ github.ref_name }} \
+            --version ${{ steps.parse-yaml.outputs.version }} \
+            ${{ steps.parse-yaml.outputs.gnu-model-params }}
 
       - name: Deduplicate staging deployments
         if: ${{ github.ref_name == 'prd' }}
         run: |
-          python .github/workflows/deduplicate-deployments.py --version ${{ steps.build-version.outputs.result }}
+          python .github/workflows/deduplicate-deployments.py \
+            --version ${{ steps.parse-yaml.outputs.version }}

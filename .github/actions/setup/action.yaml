@@ -1,0 +1,43 @@
+name: 'Extract deployment fields'
+description: 'Extract deployment fields'
+inputs:
+  yaml-path:
+    description: 'deployments yaml path'
+    required: false
+    default: 'deployments.yaml'
+outputs:
+  json:
+    description: "entire thing to load with toJson in case you need it"
+    value: ${{ steps.load-yaml.outputs.result }}
+  tag:
+    description: "tag from the deployments yaml"
+    value: ${{ steps.get-tag.outputs.result }}
+  version:
+    description: "complete concatenation of all the important bits, to use as a version string"
+    value: ${{ steps.build-version.outputs.result }}
+  gnu-model-params:
+    description: "'--key value' formatted model mapping"
+    value: ${{ steps.build-gnu-model-params.outputs.result }}
+runs:
+  using: "composite"
+  steps:
+    - name: Load yaml
+      id: load-yaml
+      uses: mikefarah/yq@master
+      with:
+        cmd: yq eval -o=json . ${{ inputs.yaml-path }}
+    - name: Get tag
+      id: get-tag
+      uses: mikefarah/yq@master
+      with:
+        cmd: yq eval '.tag' ${{ inputs.yaml-path }}
+    - name: Build version
+      id: build-version
+      uses: mikefarah/yq@master
+      with:
+        cmd: yq eval '[.tag] + (.models | keys) | join("-")' ${{ inputs.yaml-path }}
+    - name: Build gnu-style model parameter string
+      id: build-gnu-model-params
+      uses: mikefarah/yq@master
+      with:
+        cmd: yq eval '.models | to_entries | map("--" + .key + " " + .value) | join(" ")' ${{ inputs.yaml-path }}
