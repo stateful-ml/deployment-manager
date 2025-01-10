@@ -19,7 +19,13 @@ jobs:
         id: parse-yaml
         uses: './.github/actions/setup'
 
+      - name: Docker login
+        run: >
+          echo ${{ secrets.DOCKER_REPO_PAT }}
+          | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
+
       - uses: azure/setup-helm@v4.2.0
+
       - name: Configure kubeconfig
         env:
           KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
@@ -30,24 +36,12 @@ jobs:
       - name: Check kubectl connection
         run: kubectl get nodes
 
-      - name: Load yaml
-        id: load-yaml
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq eval -o=json . 'deployments.yaml'
-
-      - name: Build version
-        id: build-version
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq eval '[.tag] + (.models | keys) | join("-")' 'deployments.yaml'
-
       # the reason its here is that im building prefect anyway.
       # TODO: build all images, including prefect's, in their respective repos
       - name: Build Docker image for service
         run: >
           docker build
-            -t restful-ml:${{ steps.parse-yaml.outputs.tag }}
+            -t ${{ secrets.DOCKER_REGISTRY }}/restful-ml:${{ steps.parse-yaml.outputs.tag }}
             "https://github.com/stateful-ml/stateful-ml.git#${{ steps.parse-yaml.outputs.tag }}:workspace"
             --file service/Dockerfile
 
@@ -57,6 +51,7 @@ jobs:
           helm install \
             restful-ml stateful-ml/restful-ml \
             -f ./deployments.yaml \
+            --set repository=${{ secrets.DOCKER_REGISTRY }}/restful-ml \
             --set version=${{ steps.parse-yaml.outputs.version }} \
             --namespace ${{ github.ref_name }}
 
@@ -80,17 +75,10 @@ jobs:
         id: parse-yaml
         uses: './.github/actions/setup'
 
-      - name: Build prefect deployment parameters
-        id: build-deployment-params
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq eval '.models | to_entries | map("--" + .key + " " + .value) | join(" ")' 'deployments.yaml'
-
-      - name: Build version
-        id: build-version
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq eval '[.tag] + (.models | keys) | join("-")' 'deployments.yaml'
+      - name: Docker login
+        run: >
+          echo ${{ secrets.DOCKER_REPO_PAT }}
+          | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
 
       - name: Checkout tag in different repository
         uses: actions/checkout@v3
@@ -106,6 +94,8 @@ jobs:
           pip install --no-cache -r stateful-ml/workspace/shared/requirements.txt
           pip install --no-cache -r stateful-ml/workspace/pipelines/requirements.txt
           python stateful-ml/workspace/pipelines/deploy.py \
+            --image-registry ${{ secrets.DOCKER_REGISTRY }} \
+            --image-repo-name pipeful-ml
             --env ${{ github.ref_name }} \
             --version ${{ steps.parse-yaml.outputs.version }} \
             ${{ steps.parse-yaml.outputs.gnu-model-params }}
