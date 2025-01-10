@@ -89,6 +89,8 @@ jobs:
           token: ${{ secrets.STATEFUL_ML_PAT }}
 
       - name: Deploy Prefect
+        env:
+          PREFECT_API_URL: ${{ secrets.PREFECT_API_URL }}
         # wild, i NEED to ditch prefect
         run: |
           pip install --no-cache -r stateful-ml/workspace/shared/requirements.txt
