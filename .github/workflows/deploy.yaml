@@ -97,7 +97,7 @@ jobs:
           pip install --no-cache -r stateful-ml/workspace/pipelines/requirements.txt
           python stateful-ml/workspace/pipelines/deploy.py \
             --image-registry ${{ secrets.DOCKER_REGISTRY }} \
-            --image-repo-name pipeful-ml
+            --image-repo pipeful-ml
             --env ${{ github.ref_name }} \
             --version ${{ steps.parse-yaml.outputs.version }} \
             ${{ steps.parse-yaml.outputs.gnu-model-params }}
