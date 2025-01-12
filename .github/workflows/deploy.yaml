@@ -20,8 +20,8 @@ jobs:
         uses: './.github/actions/setup'
 
       - name: Docker login
-        run: >
-          echo ${{ secrets.DOCKER_REPO_PAT }}
+        run: |
+          echo ${{ secrets.DOCKER_REPO_PAT }} \
           | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
 
       - uses: azure/setup-helm@v4.2.0
@@ -39,10 +39,10 @@ jobs:
       # the reason its here is that im building prefect anyway.
       # TODO: build all images, including prefect's, in their respective repos
       - name: Build Docker image for service
-        run: >
-          docker build
-            -t ${{ secrets.DOCKER_REGISTRY }}/restful-ml:${{ steps.parse-yaml.outputs.tag }}
-            "https://github.com/stateful-ml/stateful-ml.git#${{ steps.parse-yaml.outputs.tag }}:workspace"
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKER_REGISTRY }}/restful-ml:${{ steps.parse-yaml.outputs.tag }} \
+            "https://github.com/stateful-ml/stateful-ml.git#${{ steps.parse-yaml.outputs.tag }}:workspace" \
             --file service/Dockerfile
 
       - name: Helm Install restful-ml
@@ -76,8 +76,8 @@ jobs:
         uses: './.github/actions/setup'
 
       - name: Docker login
-        run: >
-          echo ${{ secrets.DOCKER_REPO_PAT }}
+        run: |
+          echo ${{ secrets.DOCKER_REPO_PAT }} \
           | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
 
       - name: Checkout tag in different repository
