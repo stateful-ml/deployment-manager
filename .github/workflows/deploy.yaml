@@ -88,9 +88,10 @@ jobs:
           PREFECT_API_URL: ${{ secrets.PREFECT_API_URL }}
         # wild, i NEED to ditch prefect
         run: |
-          pip install --no-cache -r stateful-ml/workspace/shared/requirements.txt
-          pip install --no-cache -r stateful-ml/workspace/pipelines/requirements.txt
-          python stateful-ml/workspace/pipelines/deploy.py \
+          cd stateful-ml/workspace
+          pip install --no-cache -r shared/requirements.txt
+          pip install --no-cache -r pipelines/requirements.txt
+          python pipelines/deploy.py \
             --image-registry ${{ secrets.DOCKER_REGISTRY }} \
             --image-repo pipeful-ml \
             --env ${{ github.ref_name }} \
