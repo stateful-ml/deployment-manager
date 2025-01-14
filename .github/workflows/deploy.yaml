@@ -45,10 +45,10 @@ jobs:
             "https://github.com/stateful-ml/stateful-ml.git#${{ steps.parse-yaml.outputs.tag }}:workspace" \
             --file service/Dockerfile
 
-      - name: Helm Install restful-ml
+      - name: Helm upgrade restful-ml
         run: |
           helm repo add stateful-ml https://stateful-ml.github.io/infra/
-          helm install \
+          helm upgrade --install \
             restful-ml stateful-ml/restful-ml \
             -f ./deployments.yaml \
             --set repository=${{ secrets.DOCKER_REGISTRY }}/restful-ml \
