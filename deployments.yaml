@@ -1,3 +1,4 @@
 tag: v0.0.2-rc6
 models:
   embedder: "embedder/3"
+  preference-updater: preferenceupdater/1
