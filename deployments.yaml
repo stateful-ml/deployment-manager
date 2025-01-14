@@ -1,3 +1,3 @@
-tag: v0.0.1
+tag: v0.0.2-rc6
 models:
-  embedder: embedder/0
+  embedder: ""
