@@ -45,6 +45,9 @@ jobs:
             "https://github.com/stateful-ml/stateful-ml.git#${{ steps.parse-yaml.outputs.tag }}:workspace" \
             --file service/Dockerfile
 
+      - name: Docker push
+        run: docker push ${{ secrets.DOCKER_REGISTRY }}/restful-ml:${{ steps.parse-yaml.outputs.tag }}
+
       - name: Helm upgrade restful-ml
         run: |
           helm repo add stateful-ml https://stateful-ml.github.io/infra/
