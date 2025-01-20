@@ -35,7 +35,7 @@ runs:
       id: build-version
       uses: mikefarah/yq@master
       with:
-        cmd: yq eval '[.tag] + (.models | keys) | join("-")' ${{ inputs.yaml-path }}
+        cmd: yq eval '[.tag] + [.models[]] | join("-") | sub("/"; ".")' ${{ inputs.yaml-path }}
     - name: Build gnu-style model parameter string
       id: build-gnu-model-params
       uses: mikefarah/yq@master
