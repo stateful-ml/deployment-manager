@@ -1,4 +1,4 @@
-tag: v0.0.2-rc9
+tag: v0.0.2-rc10
 models:
   embedder: "embedder/3"
   preference-updater: preferenceupdater/1
