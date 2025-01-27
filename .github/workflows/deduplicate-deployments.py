@@ -1,3 +1,11 @@
+"""
+This module pretents that instead of having separate staging and production pipelines
+you have the same set of pipelines and the difference between staging and prod
+is just in serving. In such a setup (which makes sense if your pipelines are expensive),
+you need to ensure you are not duplicating work (since that can corrupt the state)
+but at the same time the stg and prd deployments can differ
+"""
+
 import asyncio
 import argparse
 from prefect.client.orchestration import get_client
